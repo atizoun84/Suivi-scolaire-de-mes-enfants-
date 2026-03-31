@@ -214,7 +214,12 @@
                 </div>
                 <div class="col-md-6 mb-2">
                     <label class="small fw-bold">Évaluation</label>
-                    <select id="selectEvalSaisie" class="form-select config-input" onchange="majPlaquetteEleve()"></select>
+                    <div class="input-group">
+                        <select id="selectEvalSaisie" class="form-select config-input" onchange="majPlaquetteEleve()"></select>
+                        <button class="btn btn-outline-danger config-input" type="button" id="btnSupprNoteSpecifique" onclick="supprimerNoteSpecifique()" title="Supprimer cette note précise">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -489,6 +494,47 @@
             showSuccess();
             rafraichirCompteurSeul();
             majFiltresSaisie();
+        }
+
+        function supprimerNoteSpecifique() {
+            if (document.getElementById('lockSwitch').checked) return;
+
+            const evalId = document.getElementById('selectEvalSaisie').value;
+            const eleve = document.getElementById('selectEleveSaisie').value;
+            const matiere = document.getElementById('selectMatiereSaisie').value;
+            const anneeActive = localStorage.getItem(KEY_ANNEE_ACTIVE);
+
+            if (!evalId || !eleve || !matiere) {
+                alert("Sélectionnez l'élève, la matière et l'évaluation pour supprimer une note.");
+                return;
+            }
+
+            const notesTotal = JSON.parse(localStorage.getItem(KEY_NOTES) || '[]');
+            const index = notesTotal.findIndex(n => 
+                n.evalId == evalId && 
+                n.eleve === eleve && 
+                n.matiere === matiere && 
+                n.anneeScolaire === anneeActive
+            );
+
+            if (index === -1) {
+                alert("Aucune note correspondante à supprimer.");
+                return;
+            }
+
+            if (confirm(`Voulez-vous supprimer la note de ${eleve} pour cette évaluation ?`)) {
+                const code = prompt("Code de sécurité requis :");
+                if (code === SECURE_CODE) {
+                    notesTotal.splice(index, 1);
+                    localStorage.setItem(KEY_NOTES, JSON.stringify(notesTotal));
+                    if (window.syncToCloud) window.syncToCloud('notes_liste', notesTotal);
+                    showSuccess();
+                    rafraichirCompteurSeul();
+                    majFiltresSaisie();
+                } else if (code !== null) {
+                    alert("Code incorrect !");
+                }
+            }
         }
 
         function rafraichirCompteurSeul() {
