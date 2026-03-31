@@ -275,9 +275,12 @@
         window.syncToCloud = syncToCloud;
         
         // Ecouter les mises à jour distantes pour rafraîchir l'affichage des notes et bilans
-        listenToCloud('notes_liste', (data) => { initPage(); });
-        listenToCloud('logiques_liste', (data) => { initPage(); });
+        listenToCloud('notes_liste', (data) => { initPage(); actualiserRechercheSiPresente(); });
+        listenToCloud('logiques_liste', (data) => { initPage(); actualiserRechercheSiPresente(); });
         listenToCloud('eleves', (data) => { initPage(); });
+        listenToCloud('periodes', (data) => { initPage(); });
+        listenToCloud('anneeActive', (data) => { initPage(); });
+        listenToCloud('evaluations_liste', (data) => { actualiserRechercheSiPresente(); });
     </script>
 
     <script>
@@ -319,6 +322,7 @@
 
         function remplirPeriodes() {
             const select = document.getElementById('selectPeriodeAccueil');
+            const currentVal = select.value;
             const data = JSON.parse(localStorage.getItem('scofam_periodes') || '[]');
             select.innerHTML = '';
             
@@ -331,6 +335,9 @@
                     opt.text = item;
                     select.add(opt);
                 });
+                if(currentVal && data.includes(currentVal)) {
+                    select.value = currentVal;
+                }
             }
         }
 
