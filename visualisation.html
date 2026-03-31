@@ -277,9 +277,12 @@
         }
 
         function calculerMoyenneSemestre(eleveNom, periodeCible, anneeActive) {
+            // Filtrer les notes strictement liées à la période cible et à l'élève
             const notesSem = allNotes.filter(n => {
                 const log = allLogiques.find(l => l.id == n.logiqueId);
-                return n.eleve === eleveNom && n.anneeScolaire === anneeActive && log && log.periode === periodeCible;
+                return n.eleve === eleveNom && 
+                       n.anneeScolaire === anneeActive && 
+                       log && log.periode === periodeCible;
             });
 
             if (notesSem.length === 0) return null;
@@ -288,7 +291,12 @@
             notesSem.forEach(n => {
                 if (!matieresData[n.matiere]) {
                     const log = allLogiques.find(l => l.id == n.logiqueId);
-                    matieresData[n.matiere] = { INT: [], DEV: [], coeff: log ? parseFloat(log.coeff || 1) : 1 };
+                    let specificCoeff = 1;
+                    if(log && log.matieres) {
+                        const mInfo = log.matieres.find(mi => mi.nom === n.matiere);
+                        if(mInfo) specificCoeff = parseFloat(mInfo.coeff);
+                    }
+                    matieresData[n.matiere] = { INT: [], DEV: [], coeff: specificCoeff };
                 }
                 let label = String(n.evalTexte || "").toUpperCase();
                 if (label.includes("INT")) matieresData[n.matiere].INT.push(parseFloat(n.note));
