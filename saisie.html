@@ -239,27 +239,17 @@
             </div>
         </div>
 
-        <div class="card config-card p-3">
+        <div class="card config-card p-3 text-center">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="m-0 text-primary">
                     <i class="bi bi-list-stars me-2"></i>Notes Enregistrées
                     <span id="count-Notes" class="badge-count">0</span>
                 </h6>
+                <button class="btn btn-outline-danger btn-sm config-input" onclick="supprimerToutesLesNotes()">
+                    <i class="bi bi-trash3-fill me-1"></i> Tout supprimer
+                </button>
             </div>
-            <div class="table-responsive mt-3">
-                <table class="table table-sm table-bordered align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Élève</th>
-                            <th>Éval / Matière</th>
-                            <th>Note</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bodyNotes"></tbody>
-                </table>
             </div>
-        </div>
 
         <div class="text-center mt-4">
             <div class="form-check form-switch d-inline-block p-3 border rounded bg-white shadow-sm">
@@ -283,7 +273,7 @@
         window.syncToCloud = syncToCloud; 
         
         // Ecouter les mises à jour distantes pour rafraîchir l'UI de saisie
-        listenToCloud('notes_liste', (data) => { afficherNotes(); });
+        listenToCloud('notes_liste', (data) => { rafraichirCompteurSeul(); });
         listenToCloud('logiques_liste', (data) => { chargerSaisie(); });
     </script>
 
@@ -336,7 +326,7 @@
                 selectLog.add(opt);
             });
 
-            afficherNotes();
+            rafraichirCompteurSeul();
             
             const lockSwitch = document.getElementById('lockSwitch');
             lockSwitch.checked = true;
@@ -374,7 +364,7 @@
             }
             majEvalsParMatiere();
             majPlaquetteEleve();
-            afficherNotes();
+            rafraichirCompteurSeul();
             
             appliquerVerrouillage(document.getElementById('lockSwitch').checked);
         }
@@ -491,84 +481,48 @@
 
             localStorage.setItem(KEY_NOTES, JSON.stringify(notes));
             
-            // Sync Firebase
             if(window.syncToCloud) {
                 window.syncToCloud('notes_liste', notes);
             }
 
             noteInput.value = "";
             showSuccess();
-            afficherNotes();
+            rafraichirCompteurSeul();
             majFiltresSaisie();
         }
 
-        function afficherNotes() {
+        function rafraichirCompteurSeul() {
             const notesTotal = JSON.parse(localStorage.getItem(KEY_NOTES) || '[]');
             const anneeActive = localStorage.getItem(KEY_ANNEE_ACTIVE);
             let notes = notesTotal.filter(n => n.anneeScolaire === anneeActive);
             
-            const tbody = document.getElementById('bodyNotes');
             const countEl = document.getElementById('count-Notes');
             if (countEl) countEl.innerText = notes.length;
+        }
+
+        function supprimerToutesLesNotes() {
+            if (document.getElementById('lockSwitch').checked) return;
             
-            tbody.innerHTML = "";
+            const anneeActive = localStorage.getItem(KEY_ANNEE_ACTIVE);
+            if (!anneeActive) return;
 
-            [...notes].reverse().forEach(n => {
-                const labelEval = n.evalTexte;
-                const isDevoir = labelEval.toLowerCase().includes("devoir");
-                const badgeClass = isDevoir ? "bg-danger" : "bg-info text-dark";
-                
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${n.eleve}</strong></td>
-                    <td><small class="badge ${badgeClass} mb-1">${labelEval}</small><br><small>${n.matiere}</small></td>
-                    <td><span class="badge bg-primary fs-6">${n.note}</span></td>
-                    <td class="text-center">
-                        <i class="bi bi-pencil-square text-success me-2 icon-action" style="cursor:pointer" onclick="editerNote(${n.id})"></i>
-                        <i class="bi bi-trash text-danger icon-action" style="cursor:pointer" onclick="supprimerNote(${n.id})"></i>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            appliquerVerrouillage(document.getElementById('lockSwitch').checked);
-        }
+            if (!confirm(`Voulez-vous vraiment supprimer TOUTES les notes de l'année ${anneeActive} ?`)) return;
 
-        function supprimerNote(id) {
-            if (document.getElementById('lockSwitch').checked) return;
-            const code = prompt("Veuillez entrer le code de sécurité pour supprimer :");
+            const code = prompt("Veuillez entrer le code de sécurité pour confirmer la suppression globale :");
             if (code === SECURE_CODE) {
-                let notes = JSON.parse(localStorage.getItem(KEY_NOTES) || '[]');
-                notes = notes.filter(n => n.id !== id);
-                localStorage.setItem(KEY_NOTES, JSON.stringify(notes));
+                let notesTotal = JSON.parse(localStorage.getItem(KEY_NOTES) || '[]');
+                // On garde les notes des autres années, on supprime celles de l'année active
+                let nouvellesNotes = notesTotal.filter(n => n.anneeScolaire !== anneeActive);
                 
-                // Sync Firebase
+                localStorage.setItem(KEY_NOTES, JSON.stringify(nouvellesNotes));
+                
                 if(window.syncToCloud) {
-                    window.syncToCloud('notes_liste', notes);
+                    window.syncToCloud('notes_liste', nouvellesNotes);
                 }
 
-                afficherNotes();
+                showSuccess();
+                rafraichirCompteurSeul();
                 majFiltresSaisie();
-            } else if (code !== null) alert("Code incorrect !");
-        }
-
-        function editerNote(id) {
-            if (document.getElementById('lockSwitch').checked) return;
-            const code = prompt("Veuillez entrer le code de sécurité pour modifier :");
-            if (code === SECURE_CODE) {
-                const notes = JSON.parse(localStorage.getItem(KEY_NOTES) || '[]');
-                const n = notes.find(item => item.id === id);
-                if (n) {
-                    document.getElementById('selectLogiqueSaisie').value = n.logiqueId;
-                    majFiltresSaisie();
-                    document.getElementById('selectMatiereSaisie').value = n.matiere;
-                    majEvalsParMatiere();
-                    document.getElementById('selectEvalSaisie').value = n.evalId;
-                    document.getElementById('selectEleveSaisie').value = n.eleve;
-                    document.getElementById('noteValeur').value = n.note;
-                    noteEnEditionId = id;
-                    majPlaquetteEleve();
-                    window.scrollTo(0,0);
-                }
             } else if (code !== null) alert("Code incorrect !");
         }
 
@@ -578,16 +532,6 @@
             
             inputs.forEach(input => {
                 input.disabled = isLocked;
-            });
-
-            document.querySelectorAll('.icon-action').forEach(icon => {
-                if (isLocked) {
-                    icon.style.pointerEvents = "none";
-                    icon.style.opacity = "0.3";
-                } else {
-                    icon.style.pointerEvents = "auto";
-                    icon.style.opacity = "1";
-                }
             });
 
             if (isLocked) {
