@@ -275,12 +275,11 @@
         window.syncToCloud = syncToCloud;
         
         // Ecouter les mises à jour distantes pour rafraîchir l'affichage des notes et bilans
-        listenToCloud('notes_liste', (data) => { initPage(); actualiserRechercheSiPresente(); });
-        listenToCloud('logiques_liste', (data) => { initPage(); actualiserRechercheSiPresente(); });
+        listenToCloud('notes_liste', (data) => { initPage(); });
+        listenToCloud('logiques_liste', (data) => { initPage(); });
         listenToCloud('eleves', (data) => { initPage(); });
         listenToCloud('periodes', (data) => { initPage(); });
         listenToCloud('anneeActive', (data) => { initPage(); });
-        listenToCloud('evaluations_liste', (data) => { actualiserRechercheSiPresente(); });
     </script>
 
     <script>
@@ -313,6 +312,12 @@
             remplirPeriodes();
             renderAll();
             updateDate();
+            
+            // Si une recherche était en cours, on actualise le bilan après synchronisation
+            const inputRecherche = document.getElementById('inputRechercheEleve');
+            if(inputRecherche.value) {
+                afficherBilanEleve(inputRecherche.value);
+            }
         }
 
         function renderHeader() {
@@ -322,8 +327,9 @@
 
         function remplirPeriodes() {
             const select = document.getElementById('selectPeriodeAccueil');
-            const currentVal = select.value;
             const data = JSON.parse(localStorage.getItem('scofam_periodes') || '[]');
+            const currentVal = select.value;
+            
             select.innerHTML = '';
             
             if(data.length === 0) {
@@ -335,9 +341,8 @@
                     opt.text = item;
                     select.add(opt);
                 });
-                if(currentVal && data.includes(currentVal)) {
-                    select.value = currentVal;
-                }
+                // Restaurer la sélection si elle existe encore
+                if(currentVal) select.value = currentVal;
             }
         }
 
