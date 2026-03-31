@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scofam - Configuration Académique</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            /* Couleurs WhatsApp */
+            var(--wa-teal): #075E54;
+            --wa-green: #25D366;
+            --wa-light-green: #DCF8C6;
+            --fb-bg: #F0F2F5;
+            --fb-white: #FFFFFF;
+            --fb-gray: #65676B;
+            --wa-teal: #075E54;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--fb-bg);
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, var(--wa-teal), #128C7E);
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.8rem;
+            width: 100%;
+            text-align: center;
+            margin-right: 0;
+            line-height: 1;
+        }
+
+        .annee-active-display {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--wa-light-green);
+            display: block;
+            margin-top: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Styles Synchronisation et PWA */
+        .sync-toast {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .sync-toast.online { background: var(--wa-green); color: white; }
+        .sync-toast.offline { background: #6c757d; color: white; }
+
+        #install-fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background-color: var(--wa-teal);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        .nav-link.active {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+        }
+
+        .config-card {
+            background: var(--fb-white);
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .btn-fb {
+            background-color: var(--wa-teal);
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .btn-fb:hover {
+            background-color: #128C7E;
+            color: white;
+        }
+
+        .btn-outline-primary {
+            color: var(--wa-teal);
+            border-color: var(--wa-teal);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--wa-teal);
+            border-color: var(--wa-teal);
+        }
+
+        .lock-status {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .footer-credits {
+            background-color: var(--fb-white);
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 0.8rem;
+            color: var(--fb-gray);
+        }
+
+        #success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            display: none;
+            background-color: var(--wa-green);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .locked-item {
+            font-weight: bold !important;
+            color: var(--wa-teal) !important;
+        }
+
+        .badge-count {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body onload="chargerDonnees()">
+
+    <div id="success-toast">Élément ajouté avec succès !</div>
+    
+    <button id="install-fab"><i class="bi bi-download me-2"></i>Installer l'App</button>
+
+    <nav class="navbar navbar-expand-lg sticky-top navbar-dark">
+        <div class="container-fluid">
+            <div class="mx-auto text-center">
+                <a class="navbar-brand" href="index.html">Scofam</a>
+                <span id="displayAnneeActive" class="annee-active-display">CHARGEMENT...</span>
+                <div id="sync-status-toast" class="sync-toast offline">Initialisation...</div>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configannee.html">Année</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="configaccademie.html">Académie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="evaluations.html">Évaluations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="liaisons.html">Liaisons</a></li>
+                    <li class="nav-item"><a class="nav-link" href="saisie.html">Saisie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="visualisation.html">Visualisation</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h4 class="mb-4 text-dark text-center"><i class="bi bi-mortarboard-fill me-2" style="color: var(--wa-teal);"></i>Configuration Académique</h4>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Périodes Scolaires <span id="count-Periode" class="badge-count">0</span></h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listPeriodes">
+                    Afficher / Masquer
+                </button>
+            </div>
+            <div class="input-group mb-3">
+                <input type="text" id="inputPeriode" class="form-control" placeholder="Ex: 1er Semestre">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputPeriode', 'listePeriodeItems')">Ajouter</button>
+            </div>
+            <div class="collapse mt-2" id="listPeriodes">
+                <ul class="list-group list-group-flush border-top" id="listePeriodeItems"></ul>
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Cycles d'études <span id="count-Cycle" class="badge-count">0</span></h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listCycles">
+                    Afficher / Masquer
+                </button>
+            </div>
+            <div class="input-group mb-3">
+                <input type="text" id="inputCycle" class="form-control" placeholder="Ex: 1er Cycle">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputCycle', 'listeCycleItems')">Ajouter</button>
+            </div>
+            <div class="collapse mt-2" id="listCycles">
+                <ul class="list-group list-group-flush border-top" id="listeCycleItems"></ul>
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Classes <span id="count-Classe" class="badge-count">0</span></h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listClasses">
+                    Afficher / Masquer
+                </button>
+            </div>
+            <div class="input-group mb-3">
+                <input type="text" id="inputClasse" class="form-control" placeholder="Ex: 6ème A">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputClasse', 'listeClasseItems')">Ajouter</button>
+            </div>
+            <div class="collapse mt-2" id="listClasses">
+                <ul class="list-group list-group-flush border-top" id="listeClasseItems"></ul>
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Élèves <span id="count-Eleve" class="badge-count">0</span></h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listEleves">
+                    Afficher / Masquer
+                </button>
+            </div>
+            <div class="input-group mb-3">
+                <input type="text" id="inputEleve" class="form-control" placeholder="Nom et Prénoms de l'élève">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputEleve', 'listeEleveItems')">Ajouter</button>
+            </div>
+            <div class="collapse mt-2" id="listEleves">
+                <ul class="list-group list-group-flush border-top" id="listeEleveItems"></ul>
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Matières <span id="count-Matiere" class="badge-count">0</span></h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listMatieres">
+                    Afficher / Masquer
+                </button>
+            </div>
+            <div class="input-group mb-3">
+                <input type="text" id="inputMatiere" class="form-control" placeholder="Ex: Mathématiques">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputMatiere', 'listeMatiereItems')">Ajouter</button>
+            </div>
+            <div class="collapse mt-2" id="listMatieres">
+                <ul class="list-group list-group-flush border-top" id="listeMatiereItems"></ul>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <div class="form-check form-switch d-inline-block p-3 border rounded bg-white shadow-sm">
+                <input class="form-check-input" type="checkbox" id="lockSwitch" onchange="toggleLock()" checked>
+                <label class="form-check-label ms-2 lock-status" id="lockLabel" for="lockSwitch">
+                    <i class="bi bi-lock-fill text-danger"></i> Système Verrouillé
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-credits text-center">
+        <div>Concepteur : <strong>Atizoun Plateny AMOUSSOU</strong></div>
+        <div>atizoun@gmail.com | 01 97 74 40 35</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module">
+        import { syncToCloud, listenToCloud } from './sync.js';
+        window.syncToCloud = syncToCloud; 
+        
+        // Ecouter les mises à jour distantes
+        listenToCloud('periodes', (data) => { chargerDonnees(); });
+        listenToCloud('cycles', (data) => { chargerDonnees(); });
+        listenToCloud('classes', (data) => { chargerDonnees(); });
+        listenToCloud('eleves', (data) => { chargerDonnees(); });
+        listenToCloud('matieres', (data) => { chargerDonnees(); });
+        listenToCloud('anneeActive', (data) => { chargerDonnees(); });
+    </script>
+
+    <script>
+        // --- LOGIQUE PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-fab').style.display = 'block';
+        });
+
+        document.getElementById('install-fab').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-fab').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // --- LOGIQUE APPLICATION ---
+        function mettreAJourCompteurs() {
+            const listConfigs = [
+                { listId: 'listePeriodeItems', badgeId: 'count-Periode' },
+                { listId: 'listeCycleItems', badgeId: 'count-Cycle' },
+                { listId: 'listeClasseItems', badgeId: 'count-Classe' },
+                { listId: 'listeEleveItems', badgeId: 'count-Eleve' },
+                { listId: 'listeMatiereItems', badgeId: 'count-Matiere' }
+            ];
+            listConfigs.forEach(config => {
+                const count = document.getElementById(config.listId).children.length;
+                document.getElementById(config.badgeId).innerText = count;
+            });
+        }
+
+        function sauvegarderListes() {
+            const data = {
+                periodes: [],
+                cycles: [],
+                classes: [],
+                eleves: [],
+                matieres: []
+            };
+            
+            document.querySelectorAll('#listePeriodeItems .item-text').forEach(el => data.periodes.push(el.innerText));
+            document.querySelectorAll('#listeCycleItems .item-text').forEach(el => data.cycles.push(el.innerText));
+            document.querySelectorAll('#listeClasseItems .item-text').forEach(el => data.classes.push(el.innerText));
+            document.querySelectorAll('#listeEleveItems .item-text').forEach(el => data.eleves.push(el.innerText));
+            document.querySelectorAll('#listeMatiereItems .item-text').forEach(el => data.matieres.push(el.innerText));
+            
+            localStorage.setItem('scofam_periodes', JSON.stringify(data.periodes));
+            localStorage.setItem('scofam_cycles', JSON.stringify(data.cycles));
+            localStorage.setItem('scofam_classes', JSON.stringify(data.classes));
+            localStorage.setItem('scofam_eleves', JSON.stringify(data.eleves));
+            localStorage.setItem('scofam_matieres', JSON.stringify(data.matieres));
+
+            // Sync Firebase Cloud
+            if(window.syncToCloud) {
+                window.syncToCloud('periodes', data.periodes);
+                window.syncToCloud('cycles', data.cycles);
+                window.syncToCloud('classes', data.classes);
+                window.syncToCloud('eleves', data.eleves);
+                window.syncToCloud('matieres', data.matieres);
+            }
+
+            mettreAJourCompteurs();
+        }
+
+        function chargerDonnees() {
+            const listConfigs = [
+                { id: 'listePeriodeItems', key: 'scofam_periodes' },
+                { id: 'listeCycleItems', key: 'scofam_cycles' },
+                { id: 'listeClasseItems', key: 'scofam_classes' },
+                { id: 'listeEleveItems', key: 'scofam_eleves' },
+                { id: 'listeMatiereItems', key: 'scofam_matieres' }
+            ];
+
+            listConfigs.forEach(config => {
+                const stored = JSON.parse(localStorage.getItem(config.key) || '[]');
+                const list = document.getElementById(config.id);
+                list.innerHTML = ''; // Vider avant de re-remplir
+                stored.forEach(val => renderItem(config.id, val));
+            });
+
+            // Charger l'année active pour le header
+            const anneeActive = localStorage.getItem('scofam_annee_active');
+            const displayHeader = document.getElementById('displayAnneeActive');
+            if(anneeActive) {
+                displayHeader.innerText = anneeActive;
+            } else {
+                displayHeader.innerText = "AUCUNE ANNÉE ACTIVE";
+            }
+
+            mettreAJourCompteurs();
+            appliquerVerrouillage(document.getElementById('lockSwitch').checked);
+        }
+
+        function renderItem(listId, value) {
+            const list = document.getElementById(listId);
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center py-2";
+            li.innerHTML = `<span class="item-text">${value}</span> <i class="bi bi-trash text-danger btn-suppr" style="cursor:pointer" onclick="supprimerElement(this)"></i>`;
+            list.appendChild(li);
+        }
+
+        function supprimerElement(btn) {
+            const code = prompt("Veuillez entrer le code de sécurité pour confirmer la suppression :");
+            if (code === "11984") {
+                btn.parentElement.remove();
+                sauvegarderListes();
+            } else if (code !== null) {
+                alert("Code incorrect ! Suppression annulée.");
+            }
+        }
+
+        function showSuccess() {
+            const toast = document.getElementById('success-toast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        function ajouterElement(inputId, listId) {
+            const input = document.getElementById(inputId);
+            if (input.value.trim() !== "") {
+                renderItem(listId, input.value);
+                input.value = "";
+                sauvegarderListes();
+                showSuccess();
+            }
+        }
+
+        function appliquerVerrouillage(isLocked) {
+            const inputs = document.querySelectorAll('input[type="text"]');
+            const buttons = document.querySelectorAll('.action-btn');
+            const trashIcons = document.querySelectorAll('.btn-suppr, .btn-outline-primary');
+            const listTexts = document.querySelectorAll('.item-text');
+            const label = document.getElementById('lockLabel');
+
+            inputs.forEach(input => input.disabled = isLocked);
+            buttons.forEach(btn => btn.disabled = isLocked);
+            
+            trashIcons.forEach(icon => {
+                icon.style.opacity = isLocked ? '0.3' : '1';
+                icon.style.pointerEvents = isLocked ? 'none' : 'auto';
+            });
+
+            listTexts.forEach(text => {
+                isLocked ? text.classList.add('locked-item') : text.classList.remove('locked-item');
+            });
+
+            if (isLocked) {
+                label.innerHTML = '<i class="bi bi-lock-fill text-danger"></i> Système Verrouillé';
+                label.classList.add('text-danger');
+            } else {
+                label.innerHTML = '<i class="bi bi-unlock-fill text-success"></i> Modifications Ouvertes';
+                label.classList.remove('text-danger');
+            }
+        }
+
+        function toggleLock() {
+            const switchEl = document.getElementById('lockSwitch');
+            if (!switchEl.checked) {
+                const code = prompt("Veuillez entrer le code de déverrouillage :");
+                if (code !== "11984") {
+                    alert("Code incorrect !");
+                    switchEl.checked = true;
+                    return;
+                }
+            }
+            appliquerVerrouillage(switchEl.checked);
+        }
+    </script>
+</body>
+</html>

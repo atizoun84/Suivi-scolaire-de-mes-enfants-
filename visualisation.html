@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scofam - Visualisation des Notes</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --wa-teal: #075E54;
+            --wa-green: #25D366;
+            --wa-light-green: #DCF8C6;
+            --fb-bg: #F0F2F5;
+            --fb-white: #FFFFFF;
+            --fb-gray: #65676B;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--fb-bg);
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, var(--wa-teal), #128C7E);
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.8rem;
+            width: 100%;
+            text-align: center;
+            margin-right: 0;
+            line-height: 1;
+        }
+
+        .annee-active-display {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--wa-light-green);
+            display: block;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        /* --- STYLES UNIFORMISÉS PWA/SYNC --- */
+        .sync-toast {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .sync-toast.online { background: var(--wa-green); color: white; }
+        .sync-toast.offline { background: #6c757d; color: white; }
+
+        #install-fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background-color: var(--wa-teal);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+        }
+        /* ---------------------------------- */
+
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        .nav-link.active {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+        }
+
+        .config-card {
+            background: var(--fb-white);
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .note-devoir { color: #dc3545 !important; font-weight: 900; }
+        .note-interro { color: #0dcaf0 !important; font-weight: 900; }
+        .col-calcul { background-color: #f8f9fa; font-weight: bold; color: #495057; }
+
+        .footer-credits {
+            background-color: var(--fb-white);
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 0.8rem;
+            color: var(--fb-gray);
+            z-index: 1000;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--fb-gray);
+        }
+
+        .tfoot-synthese {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
+
+        .table-bordered th, .table-bordered td {
+            border: 1px solid #dee2e6 !important;
+        }
+
+        @media print {
+            body { background: white !important; padding: 0 !important; }
+            .navbar, .footer-credits, .config-card:first-of-type, .btn-action-ui, #install-fab { display: none !important; }
+            .container { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .card { border: none !important; box-shadow: none !important; page-break-inside: avoid; }
+            table { font-size: 10pt !important; width: 100% !important; border-collapse: collapse !important; }
+            .table-dark { background-color: #343a40 !important; color: white !important; -webkit-print-color-adjust: exact; }
+            .bg-primary, .bg-success, .bg-danger, .bg-warning { -webkit-print-color-adjust: exact; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px; }
+            .signature-area { display: block !important; margin-top: 30px; text-align: right; font-weight: bold; }
+        }
+
+        .print-header, .signature-area { display: none; }
+    </style>
+</head>
+<body onload="initVisualisation()">
+
+    <button id="install-fab"><i class="bi bi-download me-2"></i>Installer l'App</button>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <div class="mx-auto text-center">
+                <a class="navbar-brand" href="index.html">Scofam</a>
+                <span id="displayAnneeActive" class="annee-active-display">CHARGEMENT...</span>
+                <div id="sync-status-toast" class="sync-toast offline">Initialisation...</div>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configannee.html">Année</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configaccademie.html">Académie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="evaluations.html">Évaluations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="liaisons.html">Liaisons</a></li>
+                    <li class="nav-item"><a class="nav-link" href="saisie.html">Saisie</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="visualisation.html">Visualisation</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4" id="printArea">
+        <h4 class="mb-4 text-dark text-center btn-action-ui"><i class="bi bi-eye-fill me-2" style="color: var(--wa-teal);"></i>Consultation des Notes</h4>
+
+        <div class="card config-card p-3 shadow-sm btn-action-ui">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <label class="small fw-bold text-muted">Filtrer par Période</label>
+                    <select id="filtrePeriode" class="form-select" onchange="filtrerNotes()">
+                        <option value="TOUS">Toutes les périodes</option>
+                    </select>
+                </div>
+                <div class="col-md-7">
+                    <label class="small fw-bold text-muted">Rechercher un élève</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" id="searchEleve" class="form-control border-start-0" placeholder="Saisir le nom..." oninput="filtrerNotes()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultatsContainer" class="mt-3"></div>
+    </div>
+
+    <footer class="footer-credits text-center">
+        <div>Concepteur : <strong>Atizoun Plateny AMOUSSOU</strong></div>
+        <div>atizoun@gmail.com | 01 97 74 40 35</div>
+    </footer>
+
+    <script type="module">
+        import { syncToCloud, listenToCloud } from './sync.js';
+        window.syncToCloud = syncToCloud;
+        
+        // Mise à jour temps réel si les notes ou logiques changent sur le cloud
+        listenToCloud('notes_liste', (data) => { initVisualisation(); });
+        listenToCloud('logiques_liste', (data) => { initVisualisation(); });
+        listenToCloud('anneeActive', (data) => { initVisualisation(); });
+    </script>
+
+    <script>
+        // --- LOGIQUE PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-fab').style.display = 'block';
+        });
+
+        document.getElementById('install-fab').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-fab').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // --- LOGIQUE APPLICATION ---
+        const KEY_ANNEE_ACTIVE = 'scofam_annee_active';
+        const KEY_LOGIQUES = 'scofam_logiques_liste';
+        const KEY_NOTES = 'scofam_notes_liste';
+        const KEY_CHEF_NOM = 'scofam_chefNom';
+
+        let allNotes = [];
+        let allLogiques = [];
+
+        function initVisualisation() {
+            const annee = localStorage.getItem(KEY_ANNEE_ACTIVE);
+            document.getElementById('displayAnneeActive').innerText = annee || "AUCUNE ANNÉE";
+
+            allNotes = JSON.parse(localStorage.getItem(KEY_NOTES) || '[]');
+            allLogiques = JSON.parse(localStorage.getItem(KEY_LOGIQUES) || '[]');
+
+            const selectP = document.getElementById('filtrePeriode');
+            const currentVal = selectP.value;
+            selectP.innerHTML = '<option value="TOUS">Toutes les périodes</option>';
+            
+            const periodesUniques = [...new Set(allLogiques.map(l => l.periode))];
+            periodesUniques.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p; opt.text = p; selectP.add(opt);
+            });
+            selectP.value = currentVal;
+            
+            filtrerNotes();
+        }
+
+        function getColorClass(note, seuil = 10) {
+            if (note === "-" || note === null || note === undefined || isNaN(note)) return "";
+            return parseFloat(note) < seuil ? "bg-danger-subtle" : "";
+        }
+
+        function getAppreciation(moy) {
+            if (moy < 10) return "Médiocre";
+            if (moy < 12) return "Passable";
+            if (moy < 14) return "Assez Bien";
+            if (moy < 16) return "Bien";
+            return "Très Bien";
+        }
+
+        function calculerMoyenneSemestre(eleveNom, periodeCible, anneeActive) {
+            const notesSem = allNotes.filter(n => {
+                const log = allLogiques.find(l => l.id == n.logiqueId);
+                return n.eleve === eleveNom && n.anneeScolaire === anneeActive && log && log.periode === periodeCible;
+            });
+
+            if (notesSem.length === 0) return null;
+
+            const matieresData = {};
+            notesSem.forEach(n => {
+                if (!matieresData[n.matiere]) {
+                    const log = allLogiques.find(l => l.id == n.logiqueId);
+                    matieresData[n.matiere] = { INT: [], DEV: [], coeff: log ? parseFloat(log.coeff || 1) : 1 };
+                }
+                let label = String(n.evalTexte || "").toUpperCase();
+                if (label.includes("INT")) matieresData[n.matiere].INT.push(parseFloat(n.note));
+                else if (label.includes("DEV")) matieresData[n.matiere].DEV.push(parseFloat(n.note));
+            });
+
+            let totMoyCoef = 0; let totCoeff = 0;
+            for (const [m, data] of Object.entries(matieresData)) {
+                let moyInt = data.INT.length > 0 ? (data.INT.reduce((a, b) => a + b, 0) / data.INT.length) : 0;
+                let sumPoints = moyInt + data.DEV.reduce((a, b) => a + b, 0);
+                let count = (data.INT.length > 0 ? 1 : 0) + data.DEV.length;
+                if (count > 0) {
+                    let moy20 = sumPoints / count;
+                    totMoyCoef += (moy20 * data.coeff);
+                    totCoeff += data.coeff;
+                }
+            }
+            return totCoeff > 0 ? (totMoyCoef / totCoeff) : null;
+        }
+
+        function filtrerNotes() {
+            const query = document.getElementById('searchEleve').value.toLowerCase().trim();
+            const periodeFiltre = document.getElementById('filtrePeriode').value;
+            const container = document.getElementById('resultatsContainer');
+            const anneeActive = localStorage.getItem(KEY_ANNEE_ACTIVE);
+            const chefFamille = localStorage.getItem(KEY_CHEF_NOM) || "Atizoun Plateny AMOUSSOU";
+
+            container.innerHTML = "";
+
+            if(query.length === 0 && periodeFiltre === "TOUS") {
+                container.innerHTML = `<div class="empty-state"><i class="bi bi-search fs-1"></i><p>Saisissez un nom ou choisissez une période.</p></div>`;
+                return;
+            }
+
+            const notesFiltrees = allNotes.filter(n => {
+                if (n.anneeScolaire !== anneeActive) return false;
+                if (periodeFiltre !== "TOUS") {
+                    const log = allLogiques.find(l => l.id == n.logiqueId);
+                    if (!log || log.periode !== periodeFiltre) return false;
+                }
+                return n.eleve.toLowerCase().includes(query);
+            });
+
+            if (notesFiltrees.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="bi bi-folder2-open fs-1"></i><p>Aucun résultat trouvé.</p></div>`;
+                return;
+            }
+
+            const notesParEleve = {};
+            notesFiltrees.forEach(n => {
+                if (!notesParEleve[n.eleve]) {
+                    const log = allLogiques.find(l => l.id == n.logiqueId);
+                    notesParEleve[n.eleve] = { 
+                        classe: log ? log.classe : "N/A", 
+                        periode: log ? log.periode : "N/A",
+                        etablissement: log ? (log.etab || "Établissement non défini") : "N/A",
+                        matieres: {} 
+                    };
+                }
+                if (!notesParEleve[n.eleve].matieres[n.matiere]) {
+                    const log = allLogiques.find(l => l.id == n.logiqueId);
+                    let specificCoeff = 1;
+                    if(log && log.matieres) {
+                        const mInfo = log.matieres.find(mi => mi.nom === n.matiere);
+                        if(mInfo) specificCoeff = parseFloat(mInfo.coeff);
+                    }
+                    notesParEleve[n.eleve].matieres[n.matiere] = { 
+                        INT1: "-", INT2: "-", DEV1: "-", DEV2: "-", 
+                        coeff: specificCoeff
+                    };
+                }
+
+                let label = String(n.evalTexte || "").toUpperCase();
+                if (label.includes("INT") && label.includes("1")) notesParEleve[n.eleve].matieres[n.matiere].INT1 = n.note;
+                else if (label.includes("INT") && label.includes("2")) notesParEleve[n.eleve].matieres[n.matiere].INT2 = n.note;
+                else if (label.includes("DEV") && label.includes("1")) notesParEleve[n.eleve].matieres[n.matiere].DEV1 = n.note;
+                else if (label.includes("DEV") && label.includes("2")) notesParEleve[n.eleve].matieres[n.matiere].DEV2 = n.note;
+            });
+
+            for (const [nomEleve, data] of Object.entries(notesParEleve)) {
+                const card = document.createElement('div');
+                card.className = "card config-card mb-4";
+                
+                let totMoyCoef = 0;
+                let totCoeff = 0;
+                let whatsappText = `📝 *RELEVÉ DE NOTES - SCOFAM*\n\n`;
+                whatsappText += `👤 *Élève :* ${nomEleve.toUpperCase()}\n`;
+                whatsappText += `🏫 *Ets :* ${data.etablissement}\n`;
+                whatsappText += `📅 *Période :* ${data.periode}\n`;
+                whatsappText += `🎓 *Classe :* ${data.classe}\n`;
+                whatsappText += `--------------------------\n`;
+
+                let tableHtml = `
+                    <div class="print-header">
+                        <h3>RELEVÉ DE NOTES SCOLAIRE</h3>
+                        <p><strong>Année Scolaire :</strong> ${anneeActive} | <strong>Période :</strong> ${data.periode}</p>
+                        <p><strong>Établissement :</strong> ${data.etablissement} | <strong>Classe :</strong> ${data.classe}</p>
+                    </div>
+                    <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center btn-action-ui">
+                        <span class="text-dark">${nomEleve}</span>
+                        <div>
+                            <button class="btn btn-sm btn-success me-1" onclick="shareWhatsApp(this)"><i class="bi bi-whatsapp"></i></button>
+                            <button class="btn btn-sm btn-primary" onclick="printReport()"><i class="bi bi-printer"></i></button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered m-0 text-center align-middle" style="font-size: 0.85rem;">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-start">Matières</th>
+                                    <th>INT1</th><th>INT2</th><th class="bg-primary text-white">MOY INT</th>
+                                    <th>DEV1</th><th>DEV2</th>
+                                    <th class="bg-success text-white">TOT DEV</th>
+                                    <th class="bg-danger text-white">MOY/20</th>
+                                    <th class="bg-warning text-dark">MOY COEF</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                for (const [matiere, notes] of Object.entries(data.matieres)) {
+                    let intSum = 0, intCount = 0;
+                    if(notes.INT1 !== "-") { intSum += parseFloat(notes.INT1); intCount++; }
+                    if(notes.INT2 !== "-") { intSum += parseFloat(notes.INT2); intCount++; }
+                    let moyInt = intCount > 0 ? (intSum / intCount) : 0;
+
+                    let totPointsMatiere = moyInt;
+                    let formulaCount = intCount > 0 ? 1 : 0;
+                    if(notes.DEV1 !== "-") { totPointsMatiere += parseFloat(notes.DEV1); formulaCount++; }
+                    if(notes.DEV2 !== "-") { totPointsMatiere += parseFloat(notes.DEV2); formulaCount++; }
+                    
+                    let moy20 = formulaCount > 0 ? (totPointsMatiere / formulaCount) : 0;
+                    let moyCoefValue = moy20 * notes.coeff;
+                    
+                    if (formulaCount > 0) {
+                        totMoyCoef += moyCoefValue;
+                        totCoeff += notes.coeff;
+                        whatsappText += `*${matiere}* (x${notes.coeff})\n`;
+                        whatsappText += `  └ INT: ${notes.INT1} | ${notes.INT2}\n`;
+                        whatsappText += `  └ DEV: ${notes.DEV1} | ${notes.DEV2}\n`;
+                        whatsappText += `  └ *Moy: ${moy20.toFixed(2)}/20*\n\n`;
+                    }
+
+                    tableHtml += `
+                        <tr>
+                            <td class="text-start fw-bold">${matiere} <small class="text-muted">(x${notes.coeff})</small></td>
+                            <td class="note-interro ${getColorClass(notes.INT1)}">${notes.INT1}</td>
+                            <td class="note-interro ${getColorClass(notes.INT2)}">${notes.INT2}</td>
+                            <td class="col-calcul ${getColorClass(moyInt)}">${moyInt > 0 ? moyInt.toFixed(2) : "-"}</td>
+                            <td class="note-devoir ${getColorClass(notes.DEV1)}">${notes.DEV1}</td>
+                            <td class="note-devoir ${getColorClass(notes.DEV2)}">${notes.DEV2}</td>
+                            <td class="col-calcul">${formulaCount > 0 ? totPointsMatiere.toFixed(2) : "-"}</td>
+                            <td class="col-calcul text-danger ${getColorClass(moy20)}">${formulaCount > 0 ? moy20.toFixed(2) : "-"}</td>
+                            <td class="col-calcul text-primary ${getColorClass(moyCoefValue, 10 * notes.coeff)}">${formulaCount > 0 ? moyCoefValue.toFixed(2) : "-"}</td>
+                        </tr>`;
+                }
+
+                let moyGenerale = totCoeff > 0 ? (totMoyCoef / totCoeff) : 0;
+                
+                let htmlAnnuels = "";
+                if(data.periode === "2ND SEMESTRE") {
+                    const moyS1 = calculerMoyenneSemestre(nomEleve, "1ER SEMESTRE", anneeActive);
+                    if(moyS1 !== null) {
+                        const moyAn = ((moyGenerale * 2) + moyS1) / 3;
+                        whatsappText += `📊 *MOYENNE 1ER SEMESTRE : ${moyS1.toFixed(2)}/20*\n`;
+                        whatsappText += `📊 *MOYENNE ANNUELLE : ${moyAn.toFixed(2)}/20*\n`;
+                        
+                        htmlAnnuels = `
+                            <tr class="table-info">
+                                <td colspan="5" class="text-start">MOYENNE 1ER SEMESTRE : ${moyS1.toFixed(2)}</td>
+                                <td colspan="4" class="text-end fw-bold">MOYENNE ANNUELLE : ${moyAn.toFixed(2)} / 20</td>
+                            </tr>`;
+                        moyGenerale = moyAn; 
+                    }
+                }
+
+                let decision = moyGenerale >= 10 ? '✅ ADMIS(E)' : '❌ REDOUBLE';
+                whatsappText += `--------------------------\n`;
+                whatsappText += `📊 *RÉSULTAT FINAL : ${moyGenerale.toFixed(2)}/20*\n`;
+                whatsappText += `🏆 *Appréciation :* ${getAppreciation(moyGenerale)}\n`;
+                whatsappText += `📢 *Décision :* ${decision}\n`;
+                whatsappText += `--------------------------\n`;
+                whatsappText += `✍️ *Chef de Famille :* ${chefFamille}\n`;
+                whatsappText += `_Généré via l'application Scofam_`;
+                
+                card.setAttribute('data-whatsapp', whatsappText);
+
+                tableHtml += `
+                            </tbody>
+                            <tfoot class="tfoot-synthese">
+                                <tr>
+                                    <td colspan="3" class="text-start">TOT MOY COEF : ${totMoyCoef.toFixed(2)}</td>
+                                    <td colspan="3" class="text-start">TOT COEFF : ${totCoeff}</td>
+                                    <td colspan="3" class="text-end bg-dark text-white">MOY SEMESTRE : ${totCoeff > 0 ? (totMoyCoef / totCoeff).toFixed(2) : "0.00"} / 20</td>
+                                </tr>
+                                ${htmlAnnuels}
+                                <tr class="table-secondary">
+                                    <td colspan="5" class="text-start">DÉCISION : <span class="${moyGenerale >= 10 ? 'text-success' : 'text-danger'}">${moyGenerale >= 10 ? 'ADMIS(E)' : 'REDOUBLE'}</span></td>
+                                    <td colspan="4" class="text-end">APPRÉCIATION : <i>${getAppreciation(moyGenerale)}</i></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="signature-area">Signature du Chef de Famille<br><br>__________________________</div>`;
+                
+                card.innerHTML = tableHtml;
+                container.appendChild(card);
+            }
+        }
+
+        function printReport() {
+            setTimeout(() => { window.print(); }, 500);
+        }
+
+        function shareWhatsApp(btnElement) {
+            const card = btnElement.closest('.config-card');
+            const text = card ? card.getAttribute('data-whatsapp') : "";
+            if(text && text.trim() !== "") {
+                const url = "https://wa.me/?text=" + encodeURIComponent(text);
+                window.open(url, '_blank');
+            } else {
+                alert("Erreur lors de la génération du message. Vérifiez que les données sont bien saisies.");
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

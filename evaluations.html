@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scofam - Évaluations</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --wa-teal: #075E54;
+            --wa-green: #25D366;
+            --wa-light-green: #DCF8C6;
+            --fb-bg: #F0F2F5;
+            --fb-white: #FFFFFF;
+            --fb-gray: #65676B;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--fb-bg);
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, var(--wa-teal), #128C7E);
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.8rem;
+            width: 100%;
+            text-align: center;
+            margin-right: 0;
+            line-height: 1;
+        }
+
+        .annee-active-display {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--wa-light-green);
+            display: block;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        /* --- NOUVEAUX STYLES UNIFORMISÉS --- */
+        .sync-toast {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .sync-toast.online { background: var(--wa-green); color: white; }
+        .sync-toast.offline { background: #6c757d; color: white; }
+
+        #install-fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background-color: var(--wa-teal);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        .nav-link.active {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+        }
+
+        .config-card {
+            background: var(--fb-white);
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .btn-fb {
+            background-color: var(--wa-teal);
+            color: white;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .btn-fb:hover {
+            background-color: #128C7E;
+            color: white;
+        }
+
+        .btn-outline-primary {
+            color: var(--wa-teal);
+            border-color: var(--wa-teal);
+        }
+
+        .lock-status {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .footer-credits {
+            background-color: var(--fb-white);
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 0.8rem;
+            color: var(--fb-gray);
+            z-index: 1000;
+        }
+
+        #success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            display: none;
+            background-color: var(--wa-green);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .badge-count {
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
+        }
+
+        .table-responsive {
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body onload="chargerEvaluations()">
+
+    <div id="success-toast">Évaluation enregistrée avec succès !</div>
+    
+    <button id="install-fab"><i class="bi bi-download me-2"></i>Installer l'App</button>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <div class="mx-auto text-center">
+                <a class="navbar-brand" href="index.html">Scofam</a>
+                <span id="displayAnneeActive" class="annee-active-display">CHARGEMENT...</span>
+                <div id="sync-status-toast" class="sync-toast offline">Initialisation...</div>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configannee.html">Année</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configaccademie.html">Académie</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="evaluations.html">Évaluations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="liaisons.html">Liaisons</a></li>
+                    <li class="nav-item"><a class="nav-link" href="saisie.html">Saisie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="visualisation.html">Visualisation</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="card config-card p-3">
+            <h6 class="mb-3 text-success"><i class="bi bi-info-circle-fill me-2"></i>Sélection du Contexte Académique</h6>
+            <div class="mb-2">
+                <label class="small fw-bold">Choisir une configuration active</label>
+                <select id="selectLogiqueActive" class="form-select config-input" onchange="majDetailsLogique()"></select>
+                <div id="detailsLogique" class="small text-muted mt-2"></div>
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <h6 class="mb-3 text-primary"><i class="bi bi-gear-fill me-2"></i>Type et Numéro</h6>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="small fw-bold">Type d'évaluation</label>
+                    <select id="typeEval" class="form-select config-input">
+                        <option value="Interrogation">Interrogation</option>
+                        <option value="Devoir">Devoir</option>
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="small fw-bold">Numéro (n°)</label>
+                    <input type="number" id="numEval" class="form-control config-input" value="1" min="1">
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="small fw-bold mb-2">Matières concernées</label>
+                <div id="listeMatieresEvalCheck" class="list-group list-group-flush border-top"></div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mb-4">
+            <button class="btn btn-fb config-input" onclick="enregistrerEvaluation()">
+                <i class="bi bi-check-circle-fill me-2"></i>Enregistrer l'Évaluation
+            </button>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="m-0 text-primary">
+                    <i class="bi bi-list-check me-2"></i>Liste des Évaluations 
+                    <span id="count-Eval" class="badge-count">0</span>
+                </h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTable">
+                    Afficher / Masquer
+                </button>
+            </div>
+            <div class="collapse show" id="collapseTable">
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Évaluation</th>
+                                <th>Contexte</th>
+                                <th>Matière(s)</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyRecapEval"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <div class="form-check form-switch d-inline-block p-3 border rounded bg-white shadow-sm">
+                <input class="form-check-input" type="checkbox" id="lockSwitch" onchange="toggleLock()" checked>
+                <label class="form-check-label ms-2 lock-status" id="lockLabel" for="lockSwitch">
+                    <i class="bi bi-lock-fill text-danger"></i> Système Verrouillé
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-credits text-center">
+        <div>Concepteur : <strong>Atizoun Plateny AMOUSSOU</strong></div>
+        <div>atizoun@gmail.com | 01 97 74 40 35</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module">
+        import { syncToCloud, listenToCloud } from './sync.js';
+        window.syncToCloud = syncToCloud; 
+        
+        // Ecouter les changements de configuration ou d'évaluations
+        listenToCloud('logiques_liste', (data) => { chargerEvaluations(); });
+        listenToCloud('evaluations_liste', (data) => { chargerEvaluations(); });
+        listenToCloud('anneeActive', (data) => { 
+            if(data) localStorage.setItem('scofam_annee_active', data);
+            chargerEvaluations(); 
+        });
+    </script>
+
+    <script>
+        const KEY_ANNEE_ACTIVE = 'scofam_annee_active';
+        const KEY_LOGIQUES = 'scofam_logiques_liste';
+        const KEY_EVALUATIONS = 'scofam_evaluations_liste';
+        const SECURE_CODE = "11984";
+
+        // --- LOGIQUE PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-fab').style.display = 'block';
+        });
+
+        document.getElementById('install-fab').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') document.getElementById('install-fab').style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // --- LOGIQUE APPLICATION ---
+        function chargerEvaluations() {
+            const annee = localStorage.getItem(KEY_ANNEE_ACTIVE);
+            document.getElementById('displayAnneeActive').innerText = annee || "AUCUNE ANNÉE";
+
+            const logiques = JSON.parse(localStorage.getItem(KEY_LOGIQUES) || '[]');
+            const select = document.getElementById('selectLogiqueActive');
+            const currentVal = select.value;
+            
+            select.innerHTML = '<option value="">-- Sélectionner une Logique --</option>';
+            logiques.forEach(log => {
+                const opt = document.createElement('option');
+                opt.value = log.id;
+                opt.text = `${log.etab} - ${log.classe} (${log.periode})`;
+                select.add(opt);
+            });
+            if(currentVal) select.value = currentVal;
+
+            afficherRecapEval();
+            appliquerVerrouillage(document.getElementById('lockSwitch').checked);
+        }
+
+        function majDetailsLogique() {
+            const logId = document.getElementById('selectLogiqueActive').value;
+            const logiques = JSON.parse(localStorage.getItem(KEY_LOGIQUES) || '[]');
+            const log = logiques.find(l => l.id == logId);
+            const detailDiv = document.getElementById('detailsLogique');
+            const contMatieres = document.getElementById('listeMatieresEvalCheck');
+            
+            contMatieres.innerHTML = "";
+
+            if (log) {
+                detailDiv.innerHTML = `<strong>Élèves :</strong> ${log.eleves.length} inscrits.`;
+                log.matieres.forEach(m => {
+                    const div = document.createElement('div');
+                    div.className = "list-group-item d-flex align-items-center py-2";
+                    div.innerHTML = `
+                        <input class="form-check-input me-3 config-input" type="checkbox" value="${m.nom}" data-coeff="${m.coeff}">
+                        <span class="item-text"><span class="badge bg-secondary me-2">${m.coeff}</span> ${m.nom}</span>
+                    `;
+                    contMatieres.appendChild(div);
+                });
+            } else {
+                detailDiv.innerHTML = "";
+            }
+            appliquerVerrouillage(document.getElementById('lockSwitch').checked);
+        }
+
+        function enregistrerEvaluation() {
+            const logId = document.getElementById('selectLogiqueActive').value;
+            const type = document.getElementById('typeEval').value;
+            const num = document.getElementById('numEval').value;
+            
+            const matieresCochees = [];
+            document.querySelectorAll('#listeMatieresEvalCheck input:checked').forEach(i => {
+                matieresCochees.push({
+                    nom: i.value,
+                    coeff: i.getAttribute('data-coeff')
+                });
+            });
+
+            if (!logId || matieresCochees.length === 0 || !num) {
+                alert("Veuillez sélectionner une configuration, un numéro et au moins une matière.");
+                return;
+            }
+
+            const logiques = JSON.parse(localStorage.getItem(KEY_LOGIQUES) || '[]');
+            const logParent = logiques.find(l => l.id == logId);
+
+            const nouvelleEval = {
+                id: Date.now(),
+                logiqueId: logId,
+                contexteTexte: `${logParent.etab} / ${logParent.classe}`,
+                type: type,
+                numero: num,
+                matieres: matieresCochees
+            };
+
+            const evals = JSON.parse(localStorage.getItem(KEY_EVALUATIONS) || '[]');
+            evals.push(nouvelleEval);
+            
+            // Sauvegarde locale
+            localStorage.setItem(KEY_EVALUATIONS, JSON.stringify(evals));
+            
+            // Sync Firebase
+            if(window.syncToCloud) {
+                window.syncToCloud('evaluations_liste', evals);
+            }
+
+            showSuccess();
+            reinitialiserEvalForm();
+            afficherRecapEval();
+        }
+
+        function reinitialiserEvalForm() {
+            document.getElementById('numEval').value = 1;
+            document.querySelectorAll('#listeMatieresEvalCheck input').forEach(cb => cb.checked = false);
+        }
+
+        function afficherRecapEval() {
+            const evals = JSON.parse(localStorage.getItem(KEY_EVALUATIONS) || '[]');
+            const tbody = document.getElementById('bodyRecapEval');
+            const badge = document.getElementById('count-Eval');
+            
+            tbody.innerHTML = "";
+            badge.innerText = evals.length;
+
+            evals.forEach(ev => {
+                const tr = document.createElement('tr');
+                const listeAffichee = ev.matieres.map(m => `(${m.coeff}) ${m.nom}`).join(', ');
+                
+                tr.innerHTML = `
+                    <td><strong>${ev.type} n°${ev.numero}</strong></td>
+                    <td><small>${ev.contexteTexte}</small></td>
+                    <td>${listeAffichee}</td>
+                    <td class="text-center">
+                        <i class="bi bi-trash text-danger btn-suppr" style="cursor:pointer" onclick="supprimerEval(${ev.id})"></i>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function supprimerEval(id) {
+            const code = prompt("Veuillez entrer le code de sécurité pour supprimer :");
+            if (code === SECURE_CODE) {
+                let evals = JSON.parse(localStorage.getItem(KEY_EVALUATIONS) || '[]');
+                evals = evals.filter(e => e.id !== id);
+                localStorage.setItem(KEY_EVALUATIONS, JSON.stringify(evals));
+                
+                if(window.syncToCloud) window.syncToCloud('evaluations_liste', evals);
+                
+                afficherRecapEval();
+            } else if (code !== null) {
+                alert("Code incorrect !");
+            }
+        }
+
+        function appliquerVerrouillage(isLocked) {
+            const inputs = document.querySelectorAll('.config-input, .form-control, .form-select');
+            const trashIcons = document.querySelectorAll('.btn-suppr, .bi-trash');
+            const label = document.getElementById('lockLabel');
+            
+            inputs.forEach(input => input.disabled = isLocked);
+            trashIcons.forEach(icon => {
+                icon.style.opacity = isLocked ? '0.3' : '1';
+                icon.style.pointerEvents = isLocked ? 'none' : 'auto';
+            });
+
+            if (isLocked) {
+                label.innerHTML = '<i class="bi bi-lock-fill text-danger"></i> Système Verrouillé';
+                label.classList.add('text-danger');
+            } else {
+                label.innerHTML = '<i class="bi bi-unlock-fill text-success"></i> Modifications Ouvertes';
+                label.classList.remove('text-danger');
+            }
+        }
+
+        function toggleLock() {
+            const switchEl = document.getElementById('lockSwitch');
+            if (!switchEl.checked) {
+                const code = prompt("Veuillez entrer le code de déverrouillage :");
+                if (code !== SECURE_CODE) {
+                    alert("Code incorrect !");
+                    switchEl.checked = true;
+                    return;
+                }
+            }
+            appliquerVerrouillage(switchEl.checked);
+        }
+
+        function showSuccess() {
+            const toast = document.getElementById('success-toast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+    </script>
+</body>
+</html>

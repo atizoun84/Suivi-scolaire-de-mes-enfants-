@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scofam - Configuration Annuelle</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --wa-teal: #075E54;
+            --wa-green: #25D366;
+            --wa-light-green: #DCF8C6;
+            --fb-bg: #F0F2F5;
+            --fb-white: #FFFFFF;
+            --fb-gray: #65676B;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--fb-bg);
+            padding-bottom: 80px;
+        }
+
+        .navbar {
+            background: linear-gradient(to right, var(--wa-teal), #128C7E);
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.8rem;
+            width: 100%;
+            text-align: center;
+            margin-right: 0;
+            line-height: 1;
+        }
+
+        .annee-active-display {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--wa-light-green);
+            display: block;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+
+        /* --- NOUVEAUX STYLES --- */
+        .sync-toast {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .sync-toast.online { background: var(--wa-green); color: white; }
+        .sync-toast.offline { background: #6c757d; color: white; }
+
+        #install-fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background-color: var(--wa-teal);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+        }
+
+        /* ----------------------- */
+
+        .nav-link { color: rgba(255,255,255,0.8) !important; }
+        .nav-link.active { color: var(--fb-white) !important; font-weight: bold; }
+        .config-card { background: var(--fb-white); border-radius: 8px; border: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+        .btn-fb { background-color: var(--wa-teal); color: white; border-radius: 6px; font-weight: 600; }
+        .btn-fb:hover { background-color: #128C7E; color: white; }
+        .btn-outline-primary { color: var(--wa-teal); border-color: var(--wa-teal); }
+        .btn-outline-primary:hover { background-color: var(--wa-teal); border-color: var(--wa-teal); }
+        .lock-status { font-size: 0.9rem; font-weight: bold; }
+        .footer-credits { background-color: var(--fb-white); border-top: 1px solid #ddd; padding: 10px; position: fixed; bottom: 0; width: 100%; font-size: 0.8rem; color: var(--fb-gray); }
+        #success-toast { position: fixed; top: 20px; right: 20px; z-index: 1050; display: none; background-color: var(--wa-green); color: white; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .locked-item { font-weight: bold !important; color: var(--wa-teal) !important; }
+        #preview-sign { max-height: 80px; border: 1px dashed #ccc; margin-top: 10px; display: none; }
+        .active-year-bg { background-color: var(--wa-light-green) !important; border-left: 5px solid var(--wa-teal) !important; }
+    </style>
+</head>
+<body onload="chargerDonnees()">
+
+    <div id="success-toast">Élément ajouté avec succès !</div>
+    
+    <button id="install-fab"><i class="bi bi-download me-2"></i>Installer l'App</button>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <div class="mx-auto text-center">
+                <a class="navbar-brand" href="index.html">Scofam</a>
+                <span id="displayAnneeActive" class="annee-active-display">CHARGEMENT...</span>
+                <div id="sync-status-toast" class="sync-toast offline">Initialisation...</div>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="configannee.html">Année</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configaccademie.html">Académie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="evaluations.html">Évaluations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="liaisons.html">Liaisons</a></li>
+                    <li class="nav-item"><a class="nav-link" href="saisie.html">Saisie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="visualisation.html">Visualisation</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h4 class="mb-4 text-dark text-center"><i class="bi bi-gear-fill me-2" style="color: var(--wa-teal);"></i>Configuration de l'Année</h4>
+
+        <div class="card config-card p-3">
+            <h6 class="mb-3 text-success"><i class="bi bi-person-badge-fill me-2"></i>Responsable Famille</h6>
+            <div class="mb-2">
+                <input type="text" id="chefNom" class="form-control mb-2 chef-info" placeholder="Nom et Prénoms du Chef de famille" oninput="sauvegarderChef()">
+                <input type="text" id="chefWhatsApp" class="form-control mb-2 chef-info" placeholder="Contact WhatsApp (ex: +229...)" oninput="sauvegarderChef()">
+                <label class="form-label small text-muted">Importer sa signature :</label>
+                <input type="file" id="chefSign" class="form-control form-control-sm" accept="image/*" onchange="previewSignature(this)">
+                <img id="preview-sign" src="#" alt="Signature">
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Nom de l'Établissement</h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listEtab">
+                    Afficher / Masquer
+                </button>
+            </div>
+            
+            <div class="input-group mb-3">
+                <input type="text" id="inputEtab" class="form-control" placeholder="Entrez le nom de l'école">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputEtab', 'listeEtabItems')">Ajouter</button>
+            </div>
+
+            <div class="collapse mt-2" id="listEtab">
+                <ul class="list-group list-group-flush border-top" id="listeEtabItems"></ul>
+            </div>
+        </div>
+
+        <div class="card config-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0">Années Scolaires</h6>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#listAnnees">
+                    Afficher / Masquer
+                </button>
+            </div>
+            
+            <div class="input-group mb-3">
+                <input type="text" id="inputAnnee" class="form-control" placeholder="Ex: 2025-2026">
+                <button class="btn btn-fb action-btn" onclick="ajouterElement('inputAnnee', 'listeAnneeItems')">Ajouter</button>
+            </div>
+
+            <div class="collapse show mt-2" id="listAnnees">
+                <ul class="list-group list-group-flush border-top" id="listeAnneeItems"></ul>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <div class="form-check form-switch d-inline-block p-3 border rounded bg-white shadow-sm">
+                <input class="form-check-input" type="checkbox" id="lockSwitch" onchange="toggleLock()" checked>
+                <label class="form-check-label ms-2 lock-status" id="lockLabel" for="lockSwitch">
+                    <i class="bi bi-lock-fill text-danger"></i> Système Verrouillé
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-credits text-center">
+        <div>Concepteur : <strong>Atizoun Plateny AMOUSSOU</strong></div>
+        <div>atizoun@gmail.com | 01 97 74 40 35</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module">
+        import { syncToCloud, listenToCloud } from './sync.js';
+        window.syncToCloud = syncToCloud; // Rendre accessible globalement
+        
+        // Ecouter les mises à jour distantes pour rafraîchir l'UI
+        listenToCloud('etab', (data) => { chargerDonnees(); });
+        listenToCloud('annees', (data) => { chargerDonnees(); });
+        // Ajout de l'écouteur pour l'année active sur le cloud
+        listenToCloud('anneeActive', (data) => {
+            if(data) {
+                localStorage.setItem('scofam_annee_active', data);
+                document.getElementById('displayAnneeActive').innerText = data;
+                marquerAnneeActiveUI(data);
+            }
+        });
+    </script>
+
+    <script>
+        // --- LOGIQUE PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-fab').style.display = 'block';
+        });
+
+        document.getElementById('install-fab').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-fab').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // --- LOGIQUE APPLICATION ---
+        function sauvegarderListes() {
+            const etab = [];
+            document.querySelectorAll('#listeEtabItems .item-text').forEach(el => etab.push(el.innerText));
+            const annees = [];
+            document.querySelectorAll('#listeAnneeItems .item-text').forEach(el => annees.push(el.innerText));
+            
+            localStorage.setItem('scofam_etab', JSON.stringify(etab));
+            localStorage.setItem('scofam_annees', JSON.stringify(annees));
+            
+            // Sync Firebase
+            if(window.syncToCloud) {
+                window.syncToCloud('etab', etab);
+                window.syncToCloud('annees', annees);
+            }
+        }
+
+        function sauvegarderChef() {
+            const nom = document.getElementById('chefNom').value;
+            const wa = document.getElementById('chefWhatsApp').value;
+            localStorage.setItem('scofam_chefNom', nom);
+            localStorage.setItem('scofam_chefWhatsApp', wa);
+            if(window.syncToCloud) window.syncToCloud('chefInfo', {nom, wa});
+        }
+
+        function chargerDonnees() {
+            document.getElementById('chefNom').value = localStorage.getItem('scofam_chefNom') || '';
+            document.getElementById('chefWhatsApp').value = localStorage.getItem('scofam_chefWhatsApp') || '';
+            const signData = localStorage.getItem('scofam_chefSign');
+            if(signData) {
+                const preview = document.getElementById('preview-sign');
+                preview.src = signData;
+                preview.style.display = 'block';
+            }
+
+            const etab = JSON.parse(localStorage.getItem('scofam_etab') || '[]');
+            document.getElementById('listeEtabItems').innerHTML = '';
+            etab.forEach(val => renderItem('listeEtabItems', val));
+
+            const annees = JSON.parse(localStorage.getItem('scofam_annees') || '[]');
+            document.getElementById('listeAnneeItems').innerHTML = '';
+            annees.forEach(val => renderItem('listeAnneeItems', val));
+
+            const anneeActive = localStorage.getItem('scofam_annee_active');
+            if(anneeActive) {
+                document.getElementById('displayAnneeActive').innerText = anneeActive;
+                marquerAnneeActiveUI(anneeActive);
+            } else {
+                document.getElementById('displayAnneeActive').innerText = "AUCUNE ANNÉE ACTIVE";
+            }
+
+            appliquerVerrouillage(document.getElementById('lockSwitch').checked);
+        }
+
+        function renderItem(listId, value) {
+            const list = document.getElementById(listId);
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center py-2";
+            
+            let actionBtn = `<i class="bi bi-trash text-danger" style="cursor:pointer" onclick="supprimerElement(this)"></i>`;
+            
+            if(listId === 'listeAnneeItems') {
+                actionBtn = `
+                    <div>
+                        <i class="bi bi-check-circle-fill text-success me-3 btn-activer-annee" style="cursor:pointer" title="Activer" onclick="activerAnnee('${value}')"></i>
+                        <i class="bi bi-trash text-danger btn-suppr" style="cursor:pointer" onclick="supprimerElement(this)"></i>
+                    </div>
+                `;
+            }
+
+            li.innerHTML = `<span class="item-text">${value}</span> ${actionBtn}`;
+            list.appendChild(li);
+        }
+
+        function activerAnnee(annee) {
+            if(document.getElementById('lockSwitch').checked) return;
+            localStorage.setItem('scofam_annee_active', annee);
+            // Synchronisation explicite de l'année active sur le cloud
+            if(window.syncToCloud) window.syncToCloud('anneeActive', annee);
+            document.getElementById('displayAnneeActive').innerText = annee;
+            marquerAnneeActiveUI(annee);
+            showSuccess();
+        }
+
+        function marquerAnneeActiveUI(annee) {
+            document.querySelectorAll('#listeAnneeItems li').forEach(li => {
+                const text = li.querySelector('.item-text').innerText;
+                li.classList.toggle('active-year-bg', text === annee);
+            });
+        }
+
+        function supprimerElement(el) {
+            const code = prompt("Veuillez entrer le code de sécurité :");
+            if (code === "11984") {
+                const text = el.closest('li').querySelector('.item-text').innerText;
+                if(text === localStorage.getItem('scofam_annee_active')) {
+                    localStorage.removeItem('scofam_annee_active');
+                    if(window.syncToCloud) window.syncToCloud('anneeActive', null);
+                    document.getElementById('displayAnneeActive').innerText = "AUCUNE ANNÉE ACTIVE";
+                }
+                el.closest('li').remove();
+                sauvegarderListes();
+            } else if (code !== null) alert("Code incorrect !");
+        }
+
+        function previewSignature(input) {
+            const preview = document.getElementById('preview-sign');
+            if (input.files && input.files) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    localStorage.setItem('scofam_chefSign', e.target.result);
+                    if(window.syncToCloud) window.syncToCloud('chefSign', e.target.result);
+                }
+                reader.readAsDataURL(input.files);
+                showSuccess();
+            }
+        }
+
+        function showSuccess() {
+            const toast = document.getElementById('success-toast');
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        function ajouterElement(inputId, listId) {
+            const input = document.getElementById(inputId);
+            if (input.value.trim() !== "") {
+                renderItem(listId, input.value);
+                input.value = "";
+                sauvegarderListes();
+                showSuccess();
+            }
+        }
+
+        function appliquerVerrouillage(isLocked) {
+            const inputs = document.querySelectorAll('input[type="text"], input[type="file"]');
+            const buttons = document.querySelectorAll('.action-btn');
+            const trashIcons = document.querySelectorAll('.bi-trash, .btn-activer-annee, .btn-outline-primary');
+            const label = document.getElementById('lockLabel');
+
+            inputs.forEach(input => input.disabled = isLocked);
+            buttons.forEach(btn => btn.disabled = isLocked);
+            trashIcons.forEach(icon => icon.style.opacity = isLocked ? '0.3' : '1');
+            trashIcons.forEach(icon => icon.style.pointerEvents = isLocked ? 'none' : 'auto');
+
+            label.innerHTML = isLocked ? '<i class="bi bi-lock-fill text-danger"></i> Système Verrouillé' : '<i class="bi bi-unlock-fill text-success"></i> Modifications Ouvertes';
+            label.classList.toggle('text-danger', isLocked);
+        }
+
+        function toggleLock() {
+            const switchEl = document.getElementById('lockSwitch');
+            if (!switchEl.checked) {
+                if (prompt("Code de déverrouillage :") !== "11984") {
+                    alert("Code incorrect !");
+                    switchEl.checked = true;
+                    return;
+                }
+            }
+            appliquerVerrouillage(switchEl.checked);
+        }
+    </script>
+</body>
+</html>

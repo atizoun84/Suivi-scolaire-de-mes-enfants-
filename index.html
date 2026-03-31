@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scofam - Accueil</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --wa-teal: #075E54;
+            --wa-green: #25D366;
+            --wa-light-green: #DCF8C6;
+            --fb-bg: #F0F2F5;
+            --fb-white: #FFFFFF;
+            --fb-gray: #65676B;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--fb-bg);
+            padding-bottom: 80px;
+            min-height: 100vh;
+        }
+
+        /* --- HEADER UNIFORME --- */
+        .navbar {
+            background: linear-gradient(to right, var(--wa-teal), #128C7E);
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+            font-family: 'Pacifico', cursive;
+            font-size: 1.8rem;
+            width: 100%;
+            text-align: center;
+            margin-right: 0;
+            line-height: 1;
+        }
+
+        .annee-active-display {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--wa-light-green);
+            display: block;
+            margin-top: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* --- NOUVEAUX STYLES PWA & SYNC --- */
+        .sync-toast {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .sync-toast.online { background: var(--wa-green); color: white; }
+        .sync-toast.offline { background: #6c757d; color: white; }
+
+        #install-fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background-color: var(--wa-teal);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            font-weight: bold;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            transition: var(--transition-speed);
+        }
+
+        .nav-link.active {
+            color: var(--fb-white) !important;
+            font-weight: bold;
+        }
+
+        /* --- COMPOSANTS UI --- */
+        .welcome-card {
+            background: var(--fb-white);
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .stat-badge {
+            background: var(--wa-light-green);
+            color: var(--wa-teal);
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        /* --- BARRE DE RECHERCHE --- */
+        .search-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        #inputRechercheEleve {
+            border-radius: 25px;
+            padding-left: 45px;
+            height: 50px;
+            border: 2px solid #ddd;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--wa-teal);
+            font-size: 1.2rem;
+        }
+
+        #suggestionsEleves {
+            position: absolute;
+            top: 55px;
+            width: 100%;
+            z-index: 1000;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .suggestion-item:hover {
+            background-color: var(--fb-bg);
+        }
+
+        /* --- AFFICHAGE ÉVALUATIONS --- */
+        .eval-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 5px solid var(--wa-teal);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* --- FOOTER UNIFORME --- */
+        .footer-credits {
+            background-color: var(--fb-white);
+            border-top: 1px solid #ddd;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 0.8rem;
+            color: var(--fb-gray);
+            z-index: 1000;
+        }
+
+        #sync-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body onload="initPage()">
+
+    <div id="sync-overlay">
+        <div class="spinner-border text-success mb-2" role="status"></div>
+        <span class="fw-bold text-dark">Chargement des données...</span>
+    </div>
+
+    <button id="install-fab"><i class="bi bi-download me-2"></i>Installer l'App</button>
+
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid">
+            <div class="mx-auto text-center">
+                <a class="navbar-brand" href="index.html">Scofam</a>
+                <span id="displayAnneeActive" class="annee-active-display">CHARGEMENT...</span>
+                <div id="sync-status-toast" class="sync-toast offline">Initialisation...</div>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto text-center">
+                    <li class="nav-item"><a class="nav-link active" href="index.html">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configannee.html">Année</a></li>
+                    <li class="nav-item"><a class="nav-link" href="configaccademie.html">Académie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="evaluations.html">Évaluations</a></li>
+                    <li class="nav-item"><a class="nav-link" href="liaisons.html">Liaisons</a></li>
+                    <li class="nav-item"><a class="nav-link" href="saisie.html">Saisie</a></li>
+                    <li class="nav-item"><a class="nav-link" href="visualisation.html">Visualisation</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="welcome-card">
+            <div class="stat-badge" id="date-now">---</div>
+            <h2 class="fw-bold">Portail Élève</h2>
+            <p class="text-muted small">Sélectionnez la période puis recherchez un élève.</p>
+            
+            <div class="mb-3 text-start">
+                <label class="small fw-bold mb-1 text-dark"><i class="bi bi-calendar3 me-1"></i> Période de l'année scolaire</label>
+                <select id="selectPeriodeAccueil" class="form-select border-2" onchange="actualiserRechercheSiPresente()">
+                </select>
+            </div>
+
+            <div class="search-container">
+                <i class="bi bi-search search-icon"></i>
+                <input type="text" id="inputRechercheEleve" class="form-control" placeholder="Entrez le nom de l'élève..." oninput="rechercherEleve()">
+                <div id="suggestionsEleves" class="list-group"></div>
+            </div>
+        </div>
+
+        <div id="resultatConsultation" class="mt-4 pb-4"></div>
+
+        <div class="mt-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2"></i>État du Système</h6>
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#infoCollapse">
+                        <i class="bi bi-chevron-expand"></i>
+                    </button>
+                </div>
+                <div class="collapse show" id="infoCollapse">
+                    <div class="card-body bg-light" id="system-status"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-credits text-center">
+        <div>Concepteur : <strong>Atizoun Plateny AMOUSSOU</strong></div>
+        <div>atizoun@gmail.com | 01 97 74 40 35</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module">
+        import { syncToCloud, listenToCloud } from './sync.js';
+        window.syncToCloud = syncToCloud;
+        
+        // Ecouter les mises à jour distantes pour rafraîchir l'affichage des notes et bilans
+        listenToCloud('notes_liste', (data) => { initPage(); });
+        listenToCloud('logiques_liste', (data) => { initPage(); });
+        listenToCloud('eleves', (data) => { initPage(); });
+    </script>
+
+    <script>
+        // --- LOGIQUE PWA ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-fab').style.display = 'block';
+        });
+
+        document.getElementById('install-fab').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    document.getElementById('install-fab').style.display = 'none';
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        // --- LOGIQUE APPLICATION ---
+        function initPage() {
+            renderHeader();
+            remplirPeriodes();
+            renderAll();
+            updateDate();
+        }
+
+        function renderHeader() {
+            const annee = localStorage.getItem('scofam_annee_active') || "Aucune année active";
+            document.getElementById('displayAnneeActive').innerText = annee;
+        }
+
+        function remplirPeriodes() {
+            const select = document.getElementById('selectPeriodeAccueil');
+            const data = JSON.parse(localStorage.getItem('scofam_periodes') || '[]');
+            select.innerHTML = '';
+            
+            if(data.length === 0) {
+                select.innerHTML = '<option value="">-- Aucune période définie --</option>';
+            } else {
+                data.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.text = item;
+                    select.add(opt);
+                });
+            }
+        }
+
+        function actualiserRechercheSiPresente() {
+            const nom = document.getElementById('inputRechercheEleve').value;
+            if (nom) {
+                afficherBilanEleve(nom);
+            }
+        }
+
+        function rechercherEleve() {
+            const query = document.getElementById('inputRechercheEleve').value.toLowerCase();
+            const suggestions = document.getElementById('suggestionsEleves');
+            const eleves = JSON.parse(localStorage.getItem('scofam_eleves') || '[]');
+
+            if (query.length < 2) {
+                suggestions.style.display = 'none';
+                return;
+            }
+
+            const filtres = eleves.filter(el => el.toLowerCase().includes(query));
+            
+            if (filtres.length > 0) {
+                suggestions.innerHTML = filtres.map(el => `
+                    <div class="suggestion-item" onclick="selectionnerEleve('${el.replace(/'/g, "\\'")}')">
+                        <i class="bi bi-person-fill me-2 text-secondary"></i>${el}
+                    </div>
+                `).join('');
+                suggestions.style.display = 'block';
+            } else {
+                suggestions.innerHTML = `
+                    <div class="suggestion-item text-danger small">
+                        <i class="bi bi-exclamation-circle me-2"></i>Aucun élève ne correspond à votre recherche
+                    </div>`;
+                suggestions.style.display = 'block';
+            }
+        }
+
+        function selectionnerEleve(nom) {
+            document.getElementById('inputRechercheEleve').value = nom;
+            document.getElementById('suggestionsEleves').style.display = 'none';
+            afficherBilanEleve(nom);
+        }
+
+        function afficherBilanEleve(nomEleve) {
+            const container = document.getElementById('resultatConsultation');
+            const anneeActive = localStorage.getItem('scofam_annee_active');
+            const periodeSelectionnee = document.getElementById('selectPeriodeAccueil').value;
+            
+            const logiques = JSON.parse(localStorage.getItem('scofam_logiques_liste') || '[]');
+            const evalsBase = JSON.parse(localStorage.getItem('scofam_evaluations_liste') || '[]');
+            const notesBase = JSON.parse(localStorage.getItem('scofam_notes_liste') || '[]');
+
+            const logiquesEleve = logiques.filter(l => 
+                l.eleves.includes(nomEleve) && 
+                l.annee === anneeActive && 
+                l.periode === periodeSelectionnee
+            );
+
+            if (logiquesEleve.length === 0) {
+                container.innerHTML = `<div class="alert alert-warning">Cet élève n'est pas configuré pour la période "${periodeSelectionnee}" de l'année scolaire en cours.</div>`;
+                return;
+            }
+
+            let html = `<h5 class="fw-bold text-dark mt-3 mb-3"><i class="bi bi-person-check-fill me-2"></i>Bilan : ${nomEleve}</h5>`;
+
+            logiquesEleve.forEach(log => {
+                html += `<div class="mb-2"><small class="badge bg-secondary">${log.classe} - ${log.etab} (${log.periode})</small></div>`;
+                
+                log.matieres.forEach(mat => {
+                    html += `<div class="eval-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="fw-bold text-success">${mat.nom} <small class="text-muted">(Coeff: ${mat.coeff})</small></span>
+                                </div>`;
+
+                    const evalsMatiere = evalsBase.filter(ev => 
+                        ev.logiqueId == log.id && 
+                        ev.matieres.some(m => m.nom === mat.nom)
+                    );
+
+                    if (evalsMatiere.length === 0) {
+                        html += `<div class="text-muted small italic">Aucune évaluation programmée.</div>`;
+                    } else {
+                        evalsMatiere.forEach(ev => {
+                            const noteExistante = notesBase.find(n => 
+                                n.eleve === nomEleve && 
+                                n.evalId == ev.id && 
+                                n.matiere === mat.nom
+                            );
+
+                            if (noteExistante) {
+                                html += `
+                                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                        <span class="small">${ev.type} n°${ev.numero}</span>
+                                        <span class="badge bg-primary fs-6">${noteExistante.note}</span>
+                                    </div>`;
+                            } else {
+                                html += `
+                                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                        <span class="small text-muted">${ev.type} n°${ev.numero}</span>
+                                        <span class="badge bg-light text-danger border">Non renseignée</span>
+                                    </div>`;
+                            }
+                        });
+                    }
+                    html += `</div>`;
+                });
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderAll() {
+            const statusContainer = document.getElementById('system-status');
+            try {
+                const logiques = JSON.parse(localStorage.getItem('scofam_logiques_liste') || '[]');
+                const eleves = JSON.parse(localStorage.getItem('scofam_eleves') || '[]');
+                const notes = JSON.parse(localStorage.getItem('scofam_notes_liste') || '[]');
+                
+                statusContainer.innerHTML = `
+                    <div class="row text-center g-2">
+                        <div class="col-4 border-end">
+                            <div class="h5 mb-0">${logiques.length}</div>
+                            <small class="text-muted">Logiques</small>
+                        </div>
+                        <div class="col-4 border-end">
+                            <div class="h5 mb-0">${eleves.length}</div>
+                            <small class="text-muted">Élèves</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h5 mb-0">${notes.length}</div>
+                            <small class="text-muted">Notes</small>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                statusContainer.innerHTML = `<div class="alert alert-danger">Erreur stockage.</div>`;
+            }
+        }
+
+        function updateDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date().toLocaleDateString('fr-FR', options);
+            document.getElementById('date-now').innerText = today.charAt(0).toUpperCase() + today.slice(1);
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!document.querySelector('.search-container')?.contains(e.target)) {
+                document.getElementById('suggestionsEleves').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
